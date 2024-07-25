@@ -1,0 +1,57 @@
+# Load necessary libraries
+library(quantmod)
+library(rugarch)
+#install.packages("PerformanceAnalytics")
+library(PerformanceAnalytics)
+
+
+# Get the data for AMAZON
+ticker <- "AMZN"
+getSymbols(ticker, src = "yahoo", from = "2021-04-01", to = "2024-03-31")
+
+
+# Extract Adjusted Close prices
+data <- Ad(get(ticker))
+market <- data$AMZN.Adjusted
+
+
+# Calculate returns
+returns <- 100 * diff(log(market))[-1]
+
+
+# Fit an ARCH model
+spec_arch <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1, 0)),
+                        mean.model = list(armaOrder = c(0, 0)))
+fit_arch <- ugarchfit(spec = spec_arch, data = returns)
+print(fit_arch)
+
+
+# Plot the conditional volatility for ARCH
+plot(fit_arch, which = "all")
+
+
+# Fit a GARCH model
+spec_garch <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1, 1)),
+                         mean.model = list(armaOrder = c(0, 0)))
+fit_garch <- ugarchfit(spec = spec_garch, data = returns)
+print(fit_garch)
+
+
+
+# Plot the conditional volatility for GARCH
+plot(fit_garch, which = "all")
+
+
+# Forecasting with the GARCH model
+forecasts <- ugarchforecast(fit_garch, n.ahead = 90)
+print(forecasts)
+
+
+# Extract forecast results
+print(forecasts@forecast$seriesFor[87:89]) # Forecasted mean returns
+print(forecasts@forecast$sigmaFor[87:89])  # Forecasted conditional variance
+
+# Plotting the results
+plot(forecasts, which = "all")
+
+
